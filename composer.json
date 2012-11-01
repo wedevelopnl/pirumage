@@ -1,0 +1,15 @@
+{
+    "name": "thewebmen/pirumage",
+    "description": "A Mage Channel Server compatible with MCM 2.0 based on Pirum",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "mage",
+        "magento",
+        "modules"
+    ],
+    "homepage": "http://www.github.com/thewebmen/pirumage",
+    "require": {
+        "php": ">=5.3.3",
+        "fabpot/pirum": ">=1.4.0"
+    }
+}
