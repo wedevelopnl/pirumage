@@ -170,18 +170,26 @@ class Pirumage_CLI
             return 1;
         }
 
-        if (!is_dir($target.'/get')) {
-            mkdir($target.'/get', 0777, true);
+        $filename = basename($this->options[3]);
+
+        $vendor = substr($filename, 0, strpos($filename, '_'));
+        $package = substr($filename, strpos($filename, '_')+1, strpos($filename, '_') - strpos($filename, '-'));
+        $version = substr($filename, strpos($filename, '-')+1, -4);
+
+        $targetDir = $target.'/'.$vendor.'_'.$package.'/'.$version.'/';
+
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0777, true);
         }
 
-        copy($this->options[3], $target.'/get/'.basename($this->options[3]));
+        copy($this->options[3], $targetDir . basename($this->options[3]));
 
         $this->runBuild($target);
     }
 
     protected function runBuild($target)
     {
-        $builder = new Pirum_Builder($target, $this->formatter);
+        $builder = new Pirumage_Builder($target, $this->formatter);
         $builder->build();
     }
 
@@ -219,10 +227,10 @@ class Pirumage_Builder
         if (!file_exists($targetDir.'/pirumage.xml')) {
             throw new InvalidArgumentException('You must create a pirumage.xml configuration file in the root of the target directory.');
         }
-
-        if (!is_dir($targetDir.'/get')) {
-            mkdir($targetDir.'/get', 0777, true);
-        }
+//
+//        if (!is_dir($targetDir.'/get')) {
+//            mkdir($targetDir.'/get', 0777, true);
+//        }
 
         $this->server = simplexml_load_file($targetDir.'/pirumage.xml');
 
@@ -250,7 +258,7 @@ class Pirumage_Builder
         $this->formatter = $formatter;
         $this->targetDir = $targetDir;
         $this->buildDir  = sys_get_temp_dir().'/pirumage_build_'.uniqid();
-        mkdir($this->buildDir.'/rest', 0777, true);
+        mkdir($this->buildDir, 0777, true);
     }
 
     public function __destruct()
@@ -262,54 +270,27 @@ class Pirumage_Builder
     {
         $this->extractInformationFromPackages();
 
-        $this->fixArchives();
-        $this->buildChannel();
-        $this->buildMaintainers();
-        $this->buildCategories();
+          $this->buildChannel();
+//        $this->buildMaintainers();
         $this->buildPackages();
-        $this->buildComposerRepository();
+//        $this->buildComposerRepository();
         $this->buildReleasePackages();
-        $this->buildIndex();
-        $this->buildCss();
-        $this->buildFeed();
-
+//        $this->buildIndex();
+//        $this->buildCss();
+//        $this->buildFeed();
+//
         $this->updateTargetDir();
     }
 
-    protected function fixArchives()
-    {
-        // create tar files when missing
-        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($this->targetDir.'/get'), RecursiveIteratorIterator::LEAVES_ONLY) as $file) {
-            if (!preg_match(Pirumage_Package::PACKAGE_FILE_PATTERN, $file->getFileName())) {
-                continue;
-            }
-
-            $tar = preg_replace('/\.tgz/', '.tar', $file);
-            if (!file_exists($tar)) {
-                if (function_exists('gzopen')) {
-                    $gz = gzopen($file, 'r');
-                    $fp = fopen(str_replace('.tgz', '.tar', $file), 'wb');
-                    while (!gzeof($gz)) {
-                        fwrite($fp, gzread($gz, 10000));
-                    }
-                    gzclose($gz);
-                    fclose($fp);
-                } else {
-                    system('cd '.$this->targetDir.'/get/ && gunzip -c -f '.basename($file));
-                }
-            }
-        }
-    }
 
     protected function updateTargetDir()
     {
         $this->formatter and print $this->formatter->formatSection('INFO', "Updating MAGE server files.");
 
-        $this->updateComposerRepository();
         $this->updateChannel();
-        $this->updateIndex();
-        $this->updateCss();
-        $this->updateFeed();
+//        $this->updateIndex();
+//        $this->updateCss();
+//        $this->updateFeed();
         $this->updatePackages();
     }
 
@@ -341,7 +322,9 @@ class Pirumage_Builder
 
     protected function updatePackages()
     {
-        $this->mirrorDir($this->buildDir.'/rest', $this->targetDir.'/rest');
+        copy($this->buildDir.'/packages.xml', $this->targetDir.'/packages.xml');
+
+        // todo:mirror individual package.xml
     }
 
     protected function buildFeed()
@@ -468,12 +451,12 @@ EOF;
                 <em>Registering</em> the channel:
                 <pre><code>mage channel-add <?php echo $this->server->url ?></code></pre>
                 <em>Listing</em> available packages:
-                <pre><code>pear remote-list -c <?php echo $this->server->alias ?></code></pre>
+                <pre><code>pear remote-list -c <?php echo $this->server->name ?></code></pre>
                 <em>Installing</em> a package:
-                <pre><code>mage install <?php echo $this->server->alias ?> package_name</code></pre>
+                <pre><code>mage install <?php echo $this->server->name ?> package_name</code></pre>
                 <em>Installing</em> a specific version/stability:
-                <pre><code>mage install <?php echo $this->server->alias ?> package_name-1.0.0
-                    mage install <?php echo $this->server->alias ?> package_name-beta</code></pre>
+                <pre><code>mage install <?php echo $this->server->name ?> package_name-1.0.0
+                    mage install <?php echo $this->server->name ?> package_name-beta</code></pre>
                 <em>Receiving</em> updates via a <a href="<?php echo $this->server->url ?>/feed.xml">feed</a>:
                 <pre><code><?php echo $this->server->url ?>/feed.xml</code></pre>
 
@@ -494,11 +477,11 @@ EOF;
                 <h3><?php echo $package['name'] ?><small> - <?php echo $package['summary'] ?></small></h3>
                 <p><?php echo $package['description'] ?></p>
                 <table>
-                    <tr><th>Install command</th><td><strong><?php echo $package['extension'] != null ? 'pecl' : 'pear' ?> install <?php echo $this->server->alias ?>/<?php echo $package['name'] ?></strong></td></tr>
+                    <tr><th>Install command</th><td><strong><?php echo $package['extension'] != null ? 'pecl' : 'pear' ?> install <?php echo $this->server->name ?>/<?php echo $package['name'] ?></strong></td></tr>
                     <?php if ($grps): ?><?php
                     $groups = array();
                     foreach ($grps as $grp) {
-                        $groups[] = ($package['extension'] != null ? 'pecl' : 'pear').' install '.$this->server->alias.'/'.$package['name'].'#'.$grp['attribs']['name'].'&nbsp;<small>('.$grp['attribs']['hint'].')</small>';
+                        $groups[] = ($package['extension'] != null ? 'pecl' : 'pear').' install '.$this->server->name.'/'.$package['name'].'#'.$grp['attribs']['name'].'&nbsp;<small>('.$grp['attribs']['hint'].')</small>';
                     }
                     $groups = implode('<br/>', $groups);
                     ?>
@@ -548,10 +531,10 @@ EOF;
     {
         $this->formatter and print $this->formatter->formatSection('INFO', "Building releases.");
 
-        mkdir($this->buildDir.'/rest/r', 0777, true);
+//        mkdir($this->buildDir.'/rest/r', 0777, true);
 
         foreach ($this->packages as $package) {
-            mkdir($dir = $this->buildDir.'/rest/r/'.strtolower($package['name']), 0777, true);
+            mkdir($dir = $this->buildDir.'/'.$package['name'], 0777, true);
 
             $this->buildReleasePackage($dir, $package);
         }
@@ -561,7 +544,7 @@ EOF;
     {
         $this->formatter and print $this->formatter->formatSection('INFO', "Building releases for {$package['name']}.");
 
-        $url = strtolower($package['name']);
+//        $url = strtolower($package['name']);
 
         $alpha = '';
         $beta = '';
@@ -645,233 +628,53 @@ EOF
     {
         $this->formatter and print $this->formatter->formatSection('INFO', "Building release {$release['version']} for {$package['name']}.");
 
-        $url = strtolower($package['name']);
 
-        reset($release['maintainers']);
-        $maintainer = current($release['maintainers']);
+        var_dump($dir. '/' . $release['version'] .  "/package.xml");
+        die();
 
-        file_put_contents($dir.'/'.$release['version'].'.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<r xmlns="http://pear.php.net/dtd/rest.release" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://pear.php.net/dtd/rest.release http://pear.php.net/dtd/rest.release.xsd">
-    <p xlink:href="/rest/p/$url">{$package['name']}</p>
-    <c>{$this->server->name}</c>
-    <v>{$release['version']}</v>
-    <st>{$release['stability']}</st>
-    <l>{$package['license']}</l>
-    <m>{$maintainer['nickname']}</m>
-    <s>{$package['summary']}</s>
-    <d>{$package['description']}</d>
-    <da>{$release['date']}</da>
-    <n>{$release['notes']}</n>
-    <f>{$release['filesize']}</f>
-    <g>{$this->server->url}/get/{$package['name']}-{$release['version']}</g>
-    <x xlink:href="package.{$release['version']}.xml"/>
-</r>
-EOF
-        );
-
-        file_put_contents($dir.'/v2.'.$release['version'].'.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<r xmlns="http://pear.php.net/dtd/rest.release2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://pear.php.net/dtd/rest.release2 http://pear.php.net/dtd/rest.release2.xsd">
-    <p xlink:href="/rest/p/$url">{$package['name']}</p>
-    <c>{$this->server->name}</c>
-    <v>{$release['version']}</v>
-    <a>{$release['api_version']}</a>
-    <mp>{$release['php']}</mp>
-    <st>{$release['stability']}</st>
-    <l>{$package['license']}</l>
-    <m>{$maintainer['nickname']}</m>
-    <s>{$package['summary']}</s>
-    <d>{$package['description']}</d>
-    <da>{$release['date']}</da>
-    <n>{$release['notes']}</n>
-    <f>{$release['filesize']}</f>
-    <g>{$this->server->url}/get/{$package['name']}-{$release['version']}</g>
-    <x xlink:href="package.{$release['version']}.xml"/>
-</r>
-EOF
-        );
-
-        file_put_contents($dir.'/deps.'.$release['version'].'.txt', $release['deps']);
-
-        $release['info']->copyPackageXml($dir."/package.{$release['version']}.xml");
+        $release['info']->copyPackageXml($dir. '/' . $release['version'] .  "/package.xml");
     }
 
     protected function buildPackages()
     {
         $this->formatter and print $this->formatter->formatSection('INFO', "Building packages.");
 
-        mkdir($this->buildDir.'/rest/p', 0777, true);
+//        mkdir($this->buildDir.'/rest/p', 0777, true);
+
+
 
         $packages = '';
         foreach ($this->packages as $package) {
-            $packages .= "  <p>{$package['name']}</p>\n";
 
-            mkdir($dir = $this->buildDir.'/rest/p/'.strtolower($package['name']), 0777, true);
-            $this->buildPackage($dir, $package);
+            $packages .= <<<EOF
+    <p>
+        <n>{$package['name']}</n>
+        <r>
+            <s>todo</s>
+        </r>
+    </p>
+EOF;
+
+//            $this->buildPackage($this->buildDir . '/' . $package['name'], $package);
         }
 
-        file_put_contents($this->buildDir.'/rest/p/packages.xml', <<<EOF
+        file_put_contents($this->buildDir.'/packages.xml', <<<EOF
 <?xml version="1.0" encoding="UTF-8" ?>
-<a xmlns="http://pear.php.net/dtd/rest.allpackages" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://pear.php.net/dtd/rest.allpackages http://pear.php.net/dtd/rest.allpackages.xsd">
-    <c>{$this->server->name}</c>
-$packages
-</a>
+<data>
+    $packages
+</data>
 EOF
         );
     }
 
     protected function buildPackage($dir, $package)
     {
-        $this->formatter and print $this->formatter->formatSection('INFO', "Building package {$package['name']}.");
-
-        $url = strtolower($package['name']);
-
-        file_put_contents($dir.'/info.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<p xmlns="http://pear.php.net/dtd/rest.package" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://pear.php.net/dtd/rest.package    http://pear.php.net/dtd/rest.package.xsd">
-<n>{$package['name']}</n>
-<c>{$this->server->name}</c>
-<ca xlink:href="/rest/c/Default">Default</ca>
-<l>{$package['license']}</l>
-<s>{$package['summary']}</s>
-<d>{$package['description']}</d>
-<r xlink:href="/rest/r/{$url}" />
-</p>
-EOF
-        );
-
-        $maintainers = '';
-        $maintainers2 = '';
-        foreach ($package['current_maintainers'] as $nickname => $maintainer) {
-            $maintainers .= <<<EOF
-    <m>
-        <h>{$nickname}</h>
-        <a>{$maintainer['active']}</a>
-    </m>
-
-EOF;
-
-            $maintainers2 .= <<<EOF
-    <m>
-        <h>{$nickname}</h>
-        <a>{$maintainer['active']}</a>
-        <r>{$maintainer['role']}</r>
-    </m>
-
-EOF;
-        }
-
-        file_put_contents($dir.'/maintainers.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<m xmlns="http://pear.php.net/dtd/rest.packagemaintainers" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://pear.php.net/dtd/rest.packagemaintainers http://pear.php.net/dtd/rest.packagemaintainers.xsd">
-    <p>{$package['name']}</p>
-    <c>{$this->server->name}</c>
-$maintainers
-</m>
-EOF
-        );
-
-        file_put_contents($dir.'/maintainers2.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<m xmlns="http://pear.php.net/dtd/rest.packagemaintainers2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://pear.php.net/dtd/rest.packagemaintainers2 http://pear.php.net/dtd/rest.packagemaintainers2.xsd">
-    <p>{$package['name']}</p>
-    <c>{$this->server->name}</c>
-$maintainers2
-</m>
-EOF
-        );
-    }
-
-    protected function buildCategories()
-    {
-        $this->formatter and print $this->formatter->formatSection('INFO', "Building categories.");
-
-        mkdir($this->buildDir.'/rest/c/Default', 0777, true);
-
-        file_put_contents($this->buildDir.'/rest/c/categories.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<a xmlns="http://pear.php.net/dtd/rest.allcategories" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://pear.php.net/dtd/rest.allcategories http://pear.php.net/dtd/rest.allcategories.xsd">
-    <ch>{$this->server->name}</ch>
-    <c xlink:href="/rest/c/Default/info.xml">Default</c>
-</a>
-EOF
-        );
-
-        file_put_contents($this->buildDir.'/rest/c/Default/info.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<c xmlns="http://pear.php.net/dtd/rest.category" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://pear.php.net/dtd/rest.category http://pear.php.net/dtd/rest.category.xsd">
-    <n>Default</n>
-    <c>{$this->server->name}</c>
-    <a>Default</a>
-    <d>Default category</d>
-</c>
-EOF
-        );
-
-        $packages = '';
-        $packagesinfo = '';
-        foreach ($this->packages as $package) {
-            $url = strtolower($package['name']);
-
-            $packages .= "  <p xlink:href=\"/rest/p/$url\">{$package['name']}</p>\n";
-
-            $deps = '';
-            $releases = '';
-            foreach ($package['releases'] as $release) {
-                $releases .= <<<EOF
-            <r>
-                <v>{$release['version']}</v>
-                <s>{$release['stability']}</s>
-            </r>
-
-EOF;
-
-                $deps .= <<<EOF
-        <deps>
-            <v>{$release['version']}</v>
-            <d>{$release['deps']}</d>
-        </deps>
-
-EOF;
-            }
-
-            $packagesinfo .= <<<EOF
-    <pi>
-        <p>
-            <n>{$package['name']}</n>
-            <c>{$this->server->name}</c>
-            <ca xlink:href="/rest/c/Default">Default</ca>
-            <l>{$package['license']}</l>
-            <s>{$package['summary']}</s>
-            <d>{$package['description']}</d>
-            <r xlink:href="/rest/r/$url" />
-        </p>
-
-        <a>
-$releases
-        </a>
-
-$deps
-    </pi>
-EOF;
-        }
-
-        file_put_contents($this->buildDir.'/rest/c/Default/packages.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<l xmlns="http://pear.php.net/dtd/rest.categorypackages" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://pear.php.net/dtd/rest.categorypackages http://pear.php.net/dtd/rest.categorypackages.xsd">
-$packages
-</l>
-EOF
-        );
-
-        file_put_contents($this->buildDir.'/rest/c/Default/packagesinfo.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<f xmlns="http://pear.php.net/dtd/rest.categorypackageinfo" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xsi:schemaLocation="http://pear.php.net/dtd/rest.categorypackageinfo     http://pear.php.net/dtd/rest.categorypackageinfo.xsd">
-$packagesinfo
-</f>
-EOF
-        );
+//        $this->formatter and print $this->formatter->formatSection('INFO', "Building package {$package['name']}.");
+//
+//        var_dump($dir);
+//
+//        //var_dump($package->copyPackageXml());
+//        die();
     }
 
     protected function buildChannel()
@@ -896,8 +699,8 @@ EOF;
 
         // get all package files
         $files = array();
-        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($this->targetDir.'/get'), RecursiveIteratorIterator::LEAVES_ONLY) as $file) {
-            if (!preg_match(Pirum_Package::PACKAGE_FILE_PATTERN, $file->getFileName(), $match)) {
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($this->targetDir), RecursiveIteratorIterator::LEAVES_ONLY) as $file) {
+            if (!preg_match(Pirumage_Package::PACKAGE_FILE_PATTERN, $file->getFileName(), $match)) {
                 continue;
             }
 
@@ -911,8 +714,9 @@ EOF;
         // get information for each package
         $packages = array();
         foreach ($files as $file) {
-            $package = new Pirum_Package($file);
-            if (file_exists($file = $this->targetDir.'/rest/r/'.strtolower($package->getName()).'/package.'.$package->getVersion().'.xml')) {
+            $package = new Pirumage_Package($file);
+
+            if (file_exists($file = $this->targetDir . $package->getName(). '/' . $package->getVersion() . '/package.xml')) {
                 $package->loadPackageFromFile($file);
             } else {
                 $package->loadPackageFromArchive();
@@ -1180,8 +984,8 @@ class Pirumage_Package
         }
 
         // check version
-        if ($this->version != (string) $this->package->version->release) {
-            throw new InvalidArgumentException(sprintf('The package.xml version "%s" does not match the version of the archive file "%s".', $this->package->version->release, $this->version));
+        if ($this->version != (string) $this->package->version) {
+            throw new InvalidArgumentException(sprintf('The package.xml version "%s" does not match the version of the archive file "%s".', $this->package->version, $this->version));
         }
     }
 
