@@ -228,6 +228,7 @@ class Pirumage_Builder
     protected $server;
     protected $packages;
     protected $formatter;
+    protected $latestVersions;
 
     public function __construct($targetDir, $formatter = false)
     {
@@ -608,7 +609,7 @@ EOF
     <p>
         <n>{$package['name']}</n>
         <r>
-            <s>todo</s>
+            <s>{$this->latestVersions[$package['name']]}</s>
         </r>
     </p>
 EOF;
@@ -652,6 +653,8 @@ EOF;
     {
         $this->packages = array();
 
+        $versions = array();
+
         // get all package files
         $files = array();
         foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($this->targetDir), RecursiveIteratorIterator::LEAVES_ONLY) as $file) {
@@ -660,11 +663,18 @@ EOF;
             }
 
             $files[$match['release']] = (string) $file;
+            $versions[] = $match['version'];
+
+            $packageName = $match['name'];
         }
 
         // order files to have latest versions first
         uksort($files, 'version_compare');
         $files = array_reverse($files);
+
+        usort($versions, 'version_compare');
+
+        $this->latestVersions[$packageName] = array_shift($versions);
 
         // get information for each package
         $packages = array();
