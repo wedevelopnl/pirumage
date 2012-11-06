@@ -164,6 +164,12 @@ class Pirumage_CLI
             return 1;
         }
 
+        if (!is_file(pathinfo($this->options[3], PATHINFO_DIRNAME) . '/package.xml')) {
+            echo $this->formatter->formatSection('ERROR', sprintf('The package.xml file "%s" does not exist.', pathinfo($this->options[3], PATHINFO_DIRNAME) . '/package.xml'));
+
+            return 1;
+        }
+
         if (!preg_match(Pirumage_Package::PACKAGE_FILE_PATTERN, $this->options[3])) {
             echo $this->formatter->formatSection('ERROR', sprintf('The MAGE package "%s" filename is badly formatted.', $this->options[3]));
 
@@ -183,6 +189,7 @@ class Pirumage_CLI
         }
 
         copy($this->options[3], $targetDir . basename($this->options[3]));
+        copy(pathinfo($this->options[3], PATHINFO_DIRNAME) . '/package.xml', $targetDir . 'package.xml');
 
         $this->runBuild($target);
     }
@@ -263,7 +270,7 @@ class Pirumage_Builder
 
     public function __destruct()
     {
-        Pirumage_CLI::removeDir($this->buildDir);
+        //Pirumage_CLI::removeDir($this->buildDir);
     }
 
     public function build()
@@ -292,6 +299,7 @@ class Pirumage_Builder
 //        $this->updateCss();
 //        $this->updateFeed();
         $this->updatePackages();
+        $this->updateReleases();
     }
 
     protected function updateChannel()
@@ -323,8 +331,14 @@ class Pirumage_Builder
     protected function updatePackages()
     {
         copy($this->buildDir.'/packages.xml', $this->targetDir.'/packages.xml');
+    }
 
-        // todo:mirror individual package.xml
+    protected function updateReleases()
+    {
+        foreach ($this->packages as $package) {
+            copy($this->buildDir. '/' . $package['name'] . '/releases.xml', $this->targetDir . '/' . $package['name'] . '/releases.xml');
+        }
+
     }
 
     protected function buildFeed()
@@ -546,93 +560,37 @@ EOF;
 
 //        $url = strtolower($package['name']);
 
-        $alpha = '';
-        $beta = '';
-        $stable = '';
-        $snapshot = '';
         $allreleases = '';
-        $allreleases2 = '';
+
         foreach ($package['releases'] as $release) {
-            if ('stable' == $release['stability'] && !$stable) {
-                $stable = $release['version'];
-            } elseif ('beta' == $release['stability'] && !$beta) {
-                $beta = $release['version'];
-            } elseif ('alpha' == $release['stability'] && !$alpha) {
-                $alpha = $release['version'];
-            } elseif ('snapshot' == $release['stability'] && !$snapshot) {
-                $snapshot = $release['version'];
-            }
+            $date = date('Y-m-d', strtotime($release['date']));
 
             $allreleases .= <<<EOF
     <r>
         <v>{$release['version']}</v>
         <s>{$release['stability']}</s>
+        <d>{$date}</d>
     </r>
 
 EOF;
-
-            $allreleases2 .= <<<EOF
-    <r>
-        <v>{$release['version']}</v>
-        <s>{$release['stability']}</s>
-        <m>{$release['php']}</m>
-    </r>
-
-EOF;
-
-            $this->buildRelease($dir, $package, $release);
+//            $this->buildRelease($dir, $package, $release);
         }
 
-        if (count($package['releases'])) {
-            file_put_contents($dir.'/latest.txt', $package['releases'][0]['version']);
-        }
-
-        if ($stable) {
-            file_put_contents($dir.'/stable.txt', $stable);
-        }
-
-        if ($beta) {
-            file_put_contents($dir.'/beta.txt', $beta);
-        }
-
-        if ($alpha) {
-            file_put_contents($dir.'/alpha.txt', $alpha);
-        }
-
-        if ($snapshot) {
-            file_put_contents($dir.'/snapshot.txt', $snapshot);
-        }
-
-        file_put_contents($dir.'/allreleases.xml', <<<EOF
+        file_put_contents($this->buildDir.'/' . $package['name'] . '/releases.xml', <<<EOF
 <?xml version="1.0" encoding="UTF-8" ?>
-<a xmlns="http://pear.php.net/dtd/rest.allreleases" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink"     xsi:schemaLocation="http://pear.php.net/dtd/rest.allreleases http://pear.php.net/dtd/rest.allreleases.xsd">
-    <p>{$package['name']}</p>
-    <c>{$this->server->name}</c>
-$allreleases
-</a>
+<releases>
+    $allreleases
+</releases>
 EOF
         );
 
-        file_put_contents($dir.'/allreleases2.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<a xmlns="http://pear.php.net/dtd/rest.allreleases2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink"     xsi:schemaLocation="http://pear.php.net/dtd/rest.allreleases2 http://pear.php.net/dtd/rest.allreleases2.xsd">
-    <p>{$package['name']}</p>
-    <c>{$this->server->name}</c>
-$allreleases2
-</a>
-EOF
-        );
     }
 
     protected function buildRelease($dir, $package, $release)
     {
         $this->formatter and print $this->formatter->formatSection('INFO', "Building release {$release['version']} for {$package['name']}.");
 
-
-        var_dump($dir. '/' . $release['version'] .  "/package.xml");
-        die();
-
-        $release['info']->copyPackageXml($dir. '/' . $release['version'] .  "/package.xml");
+//        $release['info']->copyPackageXml($this->packageFile);
     }
 
     protected function buildPackages()
@@ -655,7 +613,7 @@ EOF
     </p>
 EOF;
 
-//            $this->buildPackage($this->buildDir . '/' . $package['name'], $package);
+            $this->buildPackage($this->buildDir . '/' . $package['name'], $package);
         }
 
         file_put_contents($this->buildDir.'/packages.xml', <<<EOF
@@ -671,10 +629,7 @@ EOF
     {
 //        $this->formatter and print $this->formatter->formatSection('INFO', "Building package {$package['name']}.");
 //
-//        var_dump($dir);
-//
-//        //var_dump($package->copyPackageXml());
-//        die();
+//        $package->copyPackageXml($dir);
     }
 
     protected function buildChannel()
