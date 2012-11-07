@@ -1,0 +1,22 @@
+{
+    "name": "thewebmen/pirumage",
+    "type": "library",
+    "description": "Mage Channel Server compatible with Magento Connect Manager v2.0",
+    "keywords": ["mage","magento", "pirum", "mcm", "connect", "package"],
+    "homepage": "http://github.com/thewebmen/pirumage",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jeroen Schouten",
+            "email": "jschouten@thewebmen.com",
+            "homepage": "http://www.thewebmen.com/",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.2.0"
+    },
+    "config": {
+        "bin-dir": "bin"
+    }
+}
