@@ -1,10 +1,10 @@
 # Pirumage is a simple Magento Channel Server Manager
 
-Pirumage is a simple Channel Server Manager compatible with Magento Connect
-Manager v2.0 (Magento CE v1.5.0.0 and up) that lets you set up channel servers in a
-matter of minutes. Pirumage is based on Pirum, the simple PEAR Channel Server
-Manager. Instead of PEAR, Pirumage is compatible with Magento's Connect Manager
-v2.0 protocol.
+Pirumage is a simple Channel Server Manager compatible with Magento
+Connect Manager v1.5.0.0 (Magento CE v1.5.0.0 and up) that lets you set up channel
+servers in a matter of minutes. Pirumage is based on Pirum, the simple PEAR
+Channel Server Manager. Instead of PEAR, Pirumage is compatible with Magento's
+Connect Manager v1.5.0.0 protocol.
 
 Because it's based on Pirum, there is no need for external dependencies, no not
 need for a database, no need to setup credentials, and nothing need to be
@@ -69,7 +69,7 @@ Adding a new release can be done by calling the add command:
 
     $ php pirumage add thewebmen path/to/Twm_Foo-1.0.0.tgz
 
-where `path/to/Twm_Foo-1.0.0.tgz` is a valid Mage module package for the 2.0
+where `path/to/Twm_Foo-1.0.0.tgz` is a valid Mage module package for the 1.5.0.0
 version of Magento Connect Manager (built for versions of Magento CE v1.5.0.0 and
 above). The `add` command also calls the `build` command automatically.
 
@@ -95,3 +95,11 @@ channel server (`thewebmen` in the example above). Select '1.5.0.0 & later' as
 Supported Releases. When you have filled in all the required field press
 'Save Data and Create Package'. Your package will be saved in
 `path\to\mage\var\connect`.
+
+## Updating Magento modules to the latest version
+
+In your Magento admin panel, go to System - Magento Connect - Connect Manager.
+You should see channel: thewebmen or whatever name you gave it. Below is a list
+of installed modules. Click 'Check for updates' to see if there are any updates.
+If there are, the option 'Upgrade to x.y.z' will appear next to the module.
+Select this option and click 'Commit changes'. Your done!

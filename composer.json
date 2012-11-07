@@ -1,7 +1,7 @@
 {
     "name": "thewebmen/pirumage",
     "type": "library",
-    "description": "Mage Channel Server compatible with Magento Connect Manager v2.0",
+    "description": "Mage Channel Server compatible with Magento ConnectManager v2.0",
     "keywords": ["mage","magento", "pirum", "mcm", "connect", "package"],
     "homepage": "http://github.com/thewebmen/pirumage",
     "license": "MIT",
