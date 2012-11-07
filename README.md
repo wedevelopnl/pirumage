@@ -40,7 +40,7 @@ configuration file. Below you find an example configuration:
     <server>
         <name>thewebmen</name>
         <summary>The Webmen Mage channel</summary>
-        <url>http://connect20.thewebmen.com/thewebmen/</url>
+        <url>http://webmen.com/thewebmen/</url>
     </server>
 
 Save the above XML configuration file as `thewebmen/pirumage.xml`.
@@ -54,14 +54,14 @@ also needed to create packages for this new channel - see below).
 
 In your Magento installalation folder:
 
-    $ mage channel-add http://connect20.thewebmen.com/thewebmen/
+    $ mage channel-add http://thewebmen.com/thewebmen/
     $ mage list-channels
 
 You should see your channel in the list:
 
     Available channels:
     community: connect20.magentocommerce.com/community
-    thewebmen: connect20.thewebmen.com/thewebmen
+    thewebmen: thewebmen.com/thewebmen
 
 ### Adding new Releases
 
@@ -78,7 +78,11 @@ above). The `add` command also calls the `build` command automatically.
 
 ### Removing releases
 
-We are still working on this!
+Removing a release is as simple as removing the appropriate directory, followed
+by the `build` command:
+
+    $ rm -rf /path/to/Twm_Foo/1.0.0
+    $ php pirumage build path/to/
 
 ## Creating a Magento module package
 
