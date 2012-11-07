@@ -572,7 +572,6 @@ EOF;
         <s>{$release['stability']}</s>
         <d>{$date}</d>
     </r>
-
 EOF;
 //            $this->buildRelease($dir, $package, $release);
         }
@@ -620,7 +619,7 @@ EOF;
         file_put_contents($this->buildDir.'/packages.xml', <<<EOF
 <?xml version="1.0" encoding="UTF-8" ?>
 <data>
-    $packages
+$packages
 </data>
 EOF
         );
@@ -674,7 +673,7 @@ EOF;
 
         usort($versions, 'version_compare');
 
-        $this->latestVersions[$packageName] = array_shift($versions);
+        $this->latestVersions[$packageName] = array_pop($versions);
 
         // get information for each package
         $packages = array();
@@ -1000,6 +999,9 @@ class Pirumage_Package
 
             $package = substr($tar, 512, $filesize);
             $this->packageFile = $this->tmpDir.'/package.xml';
+
+            var_dump($package);
+            die();
 
             file_put_contents($this->packageFile, $package);
 

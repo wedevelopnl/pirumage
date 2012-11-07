@@ -1,7 +1,7 @@
 # Pirumage is a simple Magento Channel Server Manager
 
 Pirumage is a simple Channel Server Manager compatible with Magento Connect
-Manager v2.0 (Magento CE v1.5.0 and up) that lets you setup channel servers in a
+Manager v2.0 (Magento CE v1.5.0.0 and up) that lets you set up channel servers in a
 matter of minutes. Pirumage is based on Pirum, the simple PEAR Channel Server
 Manager. Instead of PEAR, Pirumage is compatible with Magento's Connect Manager
 v2.0 protocol.
@@ -43,9 +43,9 @@ configuration file. Below you find an example configuration:
         <url>http://connect20.thewebmen.com/thewebmen/</url>
     </server>
 
-Save the above XML configuration file as `web/pirumage.xml`.
+Save the above XML configuration file as `thewebmen/pirumage.xml`.
 
-That's all. You can now build your Mage channel server by calling the `build` command:
+That's all. You can now build your MAGE channel server by calling the `build` command:
 
 Of course, as we have not added any Magento module packages yet, you will end up
 with an empty channel. But nonetheless, you can already register your channel and
@@ -69,14 +69,25 @@ Adding a new release can be done by calling the add command:
 
     $ php pirumage add thewebmen path/to/Twm_Foo-1.0.0.tgz
 
-where path/to/Twm_Foo-1.0.0.tgz is a valid Mage module package for the 2.0
-version of Magento Connect Manager (built for versions of Magento CE v1.5.0 and
+where `path/to/Twm_Foo-1.0.0.tgz` is a valid Mage module package for the 2.0
+version of Magento Connect Manager (built for versions of Magento CE v1.5.0.0 and
 above). The `add` command also calls the `build` command automatically.
 
 > Make sure the file `path/to/package.xml` exists as this is required by
 > Pirumage!
 
+### Removing releases
+
+We are still working on this!
+
 ## Creating a Magento module package
 
 Creating Magento module packages is done through the Admin panel of your Magento
-installation. todo
+installation.
+
+Go to System - Magento Connect - Package Extensions. Create your extension by
+filling in the required fields. Make sure you set 'Channel' to the name of your
+channel server (`thewebmen` in the example above). Select '1.5.0.0 & later' as
+Supported Releases. When you have filled in all the required field press
+'Save Data and Create Package'. Your package will be saved in
+`path\to\mage\var\connect`.
