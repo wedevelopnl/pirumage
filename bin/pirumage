@@ -30,7 +30,7 @@ if (isset($argv[0]) && __FILE__ == realpath($argv[0])) {
  */
 class Pirumage_CLI
 {
-    const VERSION = '0.1.0';
+    const VERSION = '0.1.1';
 
     protected $options;
     protected $formatter;
