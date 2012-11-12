@@ -1000,9 +1000,6 @@ class Pirumage_Package
             $package = substr($tar, 512, $filesize);
             $this->packageFile = $this->tmpDir.'/package.xml';
 
-            var_dump($package);
-            die();
-
             file_put_contents($this->packageFile, $package);
 
             $this->loadPackageFromFile($this->tmpDir.'/package.xml');
