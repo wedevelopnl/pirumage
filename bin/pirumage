@@ -178,9 +178,12 @@ class Pirumage_CLI
 
         $filename = basename($this->options[3]);
 
-        $vendor = substr($filename, 0, strpos($filename, '_'));
-        $package = substr($filename, strpos($filename, '_')+1, strpos($filename, '_') - strpos($filename, '-'));
-        $version = substr($filename, strpos($filename, '-')+1, -4);
+		$matches = array();
+		preg_match(Pirumage_Package::PACKAGE_FILE_PATTERN, $filename, $matches);
+		$packageName = explode("_", $matches['name']);
+		$vendor = $packageName[0];
+		$package = $packageName[1];
+		$version = $matches['version'];
 
         $targetDir = $target.'/'.$vendor.'_'.$package.'/'.$version.'/';
 
