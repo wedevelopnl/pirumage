@@ -178,9 +178,12 @@ class Pirumage_CLI
 
         $filename = basename($this->options[3]);
 
-        $vendor = substr($filename, 0, strpos($filename, '_'));
-        $package = substr($filename, strpos($filename, '_')+1, strpos($filename, '_') - strpos($filename, '-'));
-        $version = substr($filename, strpos($filename, '-')+1, -4);
+		$matches = array();
+		preg_match(Pirumage_Package::PACKAGE_FILE_PATTERN, $filename, $matches);
+		$packageName = explode("_", $matches['name']);
+		$vendor = $packageName[0];
+		$package = $packageName[1];
+		$version = $matches['version'];
 
         $targetDir = $target.'/'.$vendor.'_'.$package.'/'.$version.'/';
 
@@ -283,9 +286,9 @@ class Pirumage_Builder
         $this->buildPackages();
 //        $this->buildComposerRepository();
         $this->buildReleasePackages();
-//        $this->buildIndex();
-//        $this->buildCss();
-//        $this->buildFeed();
+        $this->buildIndex();
+        $this->buildCss();
+        $this->buildFeed();
 //
         $this->updateTargetDir();
     }
@@ -296,9 +299,9 @@ class Pirumage_Builder
         $this->formatter and print $this->formatter->formatSection('INFO', "Updating MAGE server files.");
 
         $this->updateChannel();
-//        $this->updateIndex();
-//        $this->updateCss();
-//        $this->updateFeed();
+        $this->updateIndex();
+        $this->updateCss();
+        $this->updateFeed();
         $this->updatePackages();
         $this->updateReleases();
     }
@@ -453,7 +456,7 @@ EOF;
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <title><?php echo $this->server->summary ?></title>
-        <link rel="stylesheet" type="text/css" href="pirum.css" />
+        <link rel="stylesheet" type="text/css" href="pirumage.css" />
         <link rel="alternate" type="application/rss+xml" href="<?php echo $this->server->url ?>/feed.xml" title="<?php echo  $this->server->summary ?> Latest Releases" />
     </head>
     <body>
