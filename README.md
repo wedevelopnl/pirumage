@@ -102,4 +102,4 @@ In your Magento admin panel, go to System - Magento Connect - Connect Manager.
 You should see channel: thewebmen or whatever name you gave it. Below is a list
 of installed modules. Click 'Check for updates' to see if there are any updates.
 If there are, the option 'Upgrade to x.y.z' will appear next to the module.
-Select this option and click 'Commit changes'. Your done!
+Select this option and click 'Commit changes'. You're done!
